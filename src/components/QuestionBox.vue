@@ -13,8 +13,8 @@
             <b-list-group-item 
             v-for="(answer, index) in answers"
             :key="index" 
-            @click="selectAnswer(index)"
-            :class= "[selectedIndex === index ? 'selected' : '']"
+            @click.prevent="selectAnswer(index)"
+            :class= "answerClass(index)" 
             >
                 {{answer}}
             </b-list-group-item>
@@ -27,7 +27,7 @@
         <b-button 
         variant="primary"
         @click="submitAnswer"
-        :disabled="selectedIndex === null"
+        :disabled="selectedIndex === null || answered"
         >
         Submit
         </b-button>
@@ -50,7 +50,8 @@ export default {
         return{
         selectedIndex: null,
         correctIndex: null,
-        shuffledAnswers: []    
+        shuffledAnswers: [],
+        answered: false     
         }
     },
     computed: {
@@ -65,6 +66,7 @@ export default {
            immediate:true, // this means that  handler will run when currentQuestion first gets passed as a prop
            handler() {
                this.selectedIndex = null //  the selectedIndex (0-3 for the questions) gets reset every time an answer is submitted
+               this.answered = false
                this.suffleAnswers()
            } 
        }
@@ -84,14 +86,26 @@ export default {
             if (this.selectedIndex === this.correctIndex){
                 isCorrect = true
             }
-
+            this.answered = true //this means the user can't press submit more than once (see disbaled button above)
             this.increment(isCorrect)
         },
         suffleAnswers() {
             let answers = [...this.currentQuestion.incorrect_answers, this.currentQuestion.correct_answer] //get all the answers in one array
             this.shuffledAnswers = _.shuffle(answers) //it is convention to use underscore for lowdash. Passing the answers array through the means that it will shuffle the order of the answers array
+            this.correctIndex = this.shuffledAnswers.indexOf(this.currentQuestion.correct_answer)
         },
-        
+        answerClass(index){
+            let answerClass = ''
+
+            if (!this.answered && this.selectedIndex === index){
+                answerClass = 'selected'
+            } else if (this.answered && this.correctIndex === index){
+                answerClass = 'correct'
+            } else if (this.answered && this.selectedIndex === index && this.correctIndex !== index){
+                answerClass = 'incorrect'
+            }
+            return answerClass
+        }
     }
 }
 // any variables, be it data properties or methods that you are passing from app -> questions, in order for it to display in the HTML you have to also refrence it in props to say that you're receivng a particular named variable from the partent
